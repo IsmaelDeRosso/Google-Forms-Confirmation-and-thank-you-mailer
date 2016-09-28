@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+* { margin: 0; padding: 0; }
+body { font-family: 'Open Sans', sans-serif; }
+h1 { font-size: 1.2rem; font-weight: 600; margin-top: 20px; }
+h1:first-child { margin-top: 0; }
+h2 { font-size: 1.0rem; font-weight: 400; }
+p { font-size: 0.8rem; line-height: 1.5; font-weight: 300; margin-bottom: 10px; }
+a { color: #0000FF; }
+a:hover { color: #FF9900; }
+form { padding: 10px; }
+label { font-weight: bold; }
+select, input[type="text"], textarea { width: 100%; box-sizing: border-box; -webkit-box-sizing : border-box;‌ -moz-box-sizing : border-box; }
+.placeholders { text-align: right; font-size: 0.6rem; padding-top: 2px; }
+.placeholders select { width: auto; max-width: 50%; vertical-align: middle; height: auto; padding-top: 3px; padding-bottom: 3px; }
+    </style>
+  </head>
+  <body>
+    <form>
+      <div class="form-field">
+        <label for="email-field">Sent e-mail to address in the following field</label>
+        <select id="email-field"></select>
+      </div>
+        
+      <div class="form-field">
+        <label for="cc-address">CC addresses (comma-separated)</label>
+        <input type="text" id="cc-address">
+        <div class="placeholders">
+          <span class="label">Insert placeholder</span>
+          <select></select>
+        </div>
+      </div>
+      
+      <div class="form-field">
+        <label for="subject">Subject</label>
+        <input type="text" id="subject">
+        <div class="placeholders">
+          <span class="label">Insert placeholder</span>
+          <select></select>
+        </div>
+      </div>
+          
+      <div class="form-field">
+        <label for="body">Message</label>
+        <textarea rows="8" cols="40" id="body"></textarea>
+        <div class="placeholders">
+          <span class="label">Insert placeholder</span>
+          <select></select>
+        </div>
+      </div>
+        
+      <div class="navigation" id="button-bar">
+        <button class="action" type="submit" id="save">Save</button>
+      </div>
+    </form>
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+$(function() {
+  $('#save').click(saveSettingsToServer);
+  $('form').on('change', '.placeholders select', function (event) {
+    event.preventDefault();
+    var selectedPlaceholder = jQuery('option:selected', event.target);
+    if (selectedPlaceholder.size() === 0 || selectedPlaceholder.val() === '') {
+      return;
+    }
+    var placeholderText = '{{' + selectedPlaceholder.attr('data-question-id') + ':' + selectedPlaceholder.attr('data-question-title') + '}}';
+    var insertInto = jQuery('input[type="text"], textarea', selectedPlaceholder.closest('.form-field'));
+    insertInto.val(insertInto.val() + placeholderText);
+    $(event.target).val('');
+  });
+  google.script.run
+    .withSuccessHandler(loadSettings)
+    .withFailureHandler(function showStatus(msg, element) {
+      var div = $('<div>').attr({'id': 'status', 'class': 'error'}).text(msg);
+      $(element).before(div);
+    })
+    .withUserObject($('#button-bar').get())
+    .getSettings();
+  });
+  function loadSettings(settings) {        
+    // all text fields are in the settings.formQuestions property, add them to the dropdown
+    $('.placeholders select').append($('<option>'));
+    for (var i = 0; i < settings.formQuestions.length; i++) {
+      if (settings.formQuestions[i].type === settings.formTypes.TEXT) {
+        $('#email-field').append($('<option>').attr('value', settings.formQuestions[i].id).text(settings.formQuestions[i].title));
+      }
+      $('.placeholders select').append($('<option>').attr({'data-question-id': settings.formQuestions[i].id, 'data-question-title': settings.formQuestions[i].title}).text(settings.formQuestions[i].title));
+    }
+        
+    $('#email-field').val(settings.emailField);
+    $('#cc-address').val(settings.ccAddress);
+    $('#subject').val(settings.subject);
+    $('#body').val(settings.body);
+  }
+  function saveSettingsToServer() {
+    this.disabled = true;
+    $('#status').remove();
+    var settings = {
+      emailField: $('#email-field').val(),
+      ccAddress: $('#cc-address').val(),
+      subject: $('#subject').val(),
+      body: $('#body').val()
+    };
+    // Save the settings on the server
+    google.script.run
+      .withSuccessHandler(function(msg, element) {
+        showStatus('Saved settings', $('#button-bar'));
+        element.disabled = false;
+        google.script.host.close();
+      })
+      .withFailureHandler(function(msg, element) {
+        showStatus(msg, $('#button-bar'));
+        element.disabled = false;
+      })
+      .withUserObject(this)
+      .saveSettings(settings);
+  }
+    </script>
+  </body>
+</html>
