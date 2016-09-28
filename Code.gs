@@ -116,18 +116,15 @@ function respondToFormSubmit(e) {
   var authInfo = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
   // check if authorization is oke
   if (authInfo.getAuthorizationStatus() == ScriptApp.AuthorizationStatus.REQUIRED) {
-    Logger.log('sendReauthorizationRequest');
     sendReauthorizationRequest();
     return;
   }
   // check if addon is setup
   if (settings.getProperty('active') == false) {
-    Logger.log('not active');
     return;
   }
   // check mail quota
   if (MailApp.getRemainingDailyQuota() == 0) {
-    Logger.log('no remaing daily mail quota');
     return;
   }
 
