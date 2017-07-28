@@ -1,33 +1,4 @@
-/**
- * Copyright (c) 2016 Markei.nl
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and associated documentation files (the "Software"), to 
- * deal in the Software without restriction, including without limitation the 
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
- * sell copies of the Software, and to permit persons to whom the Software is 
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
- * DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * @OnlyCurrentDoc
- */
-
-/**
- * A global constant String holding the title of the add-on. This is
- * used to identify the add-on in the notification emails.
- */
-var ADDON_TITLE = 'Confirmation and thank you mailer';
+var ADDON_TITLE = 'Auto Forward Add-On';
 
 function onOpen(e) {
   FormApp.getUi()
@@ -133,18 +104,29 @@ function respondToFormSubmit(e) {
   var form = FormApp.getActiveForm();
   
   // info for e-mail
-  var toAddress = formResponse.getResponseForItem(form.getItemById(settings.getProperty('emailField'))).getResponse();
+  var toAddress = settings.getProperty('emailField');
   var subject = settings.getProperty('subject');
   var ccAddresses = settings.getProperty('ccAddress');
   var message = settings.getProperty('body');
   var extraOptions = {name: form.getTitle()};
   
+  var numberofitems = form.getItems().length;
+  Logger.log("" + numberofitems + "")
   // replace placeholders in subject, cc, message
-  for (var i = 0; i < form.getItems().length; i ++) {
-    var formItem = form.getItems()[i];
-    subject = subject.replace('{{' + formItem.getId() + ':' + formItem.getTitle() + '}}', formResponse.getResponseForItem(formItem).getResponse());
-    ccAddresses = ccAddresses.replace('{{' + formItem.getId() + ':' + formItem.getTitle() + '}}', formResponse.getResponseForItem(formItem).getResponse());
-    message = message.replace('{{' + formItem.getId() + ':' + formItem.getTitle() + '}}', formResponse.getResponseForItem(formItem).getResponse());
+  for (var i = 0; i < numberofitems; i ++) {
+    var items = form.getItems();
+    var item = items[i];
+    if (item.getType() != 'SECTION_HEADER' && item.getType() != 'IMAGE' && item.getType()!= 'PAGE_BREAK') {
+      if (formResponse.getResponseForItem(item) == null) {
+        subject = subject.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', '');
+        ccAddresses = ccAddresses.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', '');
+        message = message.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', item.getTitle() + ": " + '');
+      } else {
+        subject = subject.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', formResponse.getResponseForItem(item).getResponse());
+        ccAddresses = ccAddresses.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', formResponse.getResponseForItem(item).getResponse());
+        message = message.replace('{{' + item.getId() + ':' + item.getTitle() + '}}', item.getTitle() + ": " + formResponse.getResponseForItem(item).getResponse());
+      }
+    }
   }
   
   // attach cc if set
