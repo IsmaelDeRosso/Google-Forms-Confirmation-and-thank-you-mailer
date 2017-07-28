@@ -14,8 +14,12 @@ select, input[type="text"], textarea { width: 100%; box-sizing: border-box; -web
   <body>
     <form>
       <div class="form-field">
-        <label for="email-field">Sent e-mail to address in the following field</label>
-        <select id="email-field"></select>
+        <label for="email-field">Send e-mail to address in the following field</label>
+        <input type="text" id="email-field">
+        <div class="placeholders">
+          <span class="label">Insert placeholder</span>
+          <select></select>
+        </div>
       </div>
         
       <div class="form-field">
